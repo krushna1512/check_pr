@@ -1,1 +1,27 @@
+name: Check PR Merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  check_merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Check PR Checklist
+        run: |
+          # Fetch the pull request description using the GitHub API and jq to parse the JSON response
+          description=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3.raw" \
+            ${{ github.api_url }}/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} | jq -r '.body')
+
+          # Check if the description contains unchecked checkboxes (`[ ]`)
+          if echo "$description" | grep -q -E '\[ \]'; then
+            echo "Please make sure all checkboxes are checked before merging."
+            exit 1
+          fi
+
 
