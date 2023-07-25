@@ -15,7 +15,7 @@ jobs:
       - name: Check PR Checklist
         id: checklist
         run: |
-          description=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          description=$(curl -s -H "Authorization: token ${{ secrets.TOKEN }}" \
             -H "Accept: application/vnd.github.v3.raw" \
             ${{ github.api_url }}/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} | jq -r '.body')
 
@@ -31,7 +31,7 @@ jobs:
         with:
           context: "Check PR Checklist"
           state: "failure"
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.TOKEN }}
 
       - name: Complete GitHub Status Check
         if: ${{ success() }}
@@ -39,4 +39,4 @@ jobs:
         with:
           context: "Check PR Checklist"
           state: "success"
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.TOKEN }}
