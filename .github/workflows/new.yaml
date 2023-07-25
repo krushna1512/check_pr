@@ -13,19 +13,19 @@ jobs:
 
       - name: Check PR Checklist
         id: checklist
-        run: |
-          # Fetch the pull request description from the GitHub context
-          description=$(curl -s -H "Authorization: token ${{ secrets.TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            ${{ github.api_url }}/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} | jq -r '.body')
+        uses: actions/github-script@v4
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const response = await github.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            const description = response.data.body;
+            const checkboxes = description.match(/\[[ x]\]/g) || [];
+            const uncheckedCheckboxes = checkboxes.filter(checkbox => checkbox === "[ ]");
 
-          # Extract all checkboxes ([ ]) from the description
-          IFS=$'\n' checkboxes=($(echo "$description" | grep -oE '\[[ x]\]'))
-
-          # Loop through each checkbox and check if it's unchecked ([ ])
-          for checkbox in "${checkboxes[@]}"; do
-            if [[ "$checkbox" == "[ ]" ]]; then
-              echo "Please make sure all checkboxes are checked before merging."
-              exit 1
-            fi
-          done
+            if (uncheckedCheckboxes.length > 0) {
+              core.setFailed("Please make sure all checkboxes are checked before merging.");
+            }
