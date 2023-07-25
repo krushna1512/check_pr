@@ -16,16 +16,26 @@ jobs:
         uses: actions/github-script@v4
         with:
           script: |
+            # Get the pull request number from the GitHub context
             const prNumber = context.payload.pull_request.number;
+
+            # Fetch the pull request details using the GitHub API
             const response = await github.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber
             });
+
+            # Extract the description from the pull request response
             const description = response.data.body;
+
+            # Extract all checkboxes ([ ]) from the description using a regular expression
             const checkboxes = description.match(/\[[ x]\]/g) || [];
+
+            # Filter unchecked checkboxes ([ ]) from the list
             const uncheckedCheckboxes = checkboxes.filter(checkbox => checkbox === "[ ]");
 
+            # If there are unchecked checkboxes, fail the workflow with an error message
             if (uncheckedCheckboxes.length > 0) {
               core.setFailed("Please make sure all checkboxes are checked before merging.");
             }
