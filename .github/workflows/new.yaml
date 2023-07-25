@@ -4,9 +4,6 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
 
-env:
-  TOKEN: ${{ secrets.TOKEN }}
-
 jobs:
   check_merge:
     runs-on: ubuntu-latest
@@ -18,7 +15,7 @@ jobs:
         id: checklist
         run: |
           # Fetch the pull request description from the GitHub context
-          description=$(curl -s -H "Authorization: token $TOKEN" \
+          description=$(curl -s -H "Authorization: token ${{ secrets.TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             ${{ github.api_url }}/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} | jq -r '.body')
 
