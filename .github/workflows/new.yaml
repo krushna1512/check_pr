@@ -7,13 +7,14 @@ on:
 jobs:
   check_merge:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
       - name: Check PR Checklist
+        id: checklist
         run: |
-          # Fetch the pull request description using the GitHub API and jq to parse the JSON response
           description=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3.raw" \
             ${{ github.api_url }}/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} | jq -r '.body')
@@ -24,4 +25,18 @@ jobs:
             exit 1
           fi
 
+      - name: Create GitHub Status Check
+        if: ${{ failure() }}
+        uses: softprops/action-gh-release@v1
+        with:
+          context: "Check PR Checklist"
+          state: "failure"
+          token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Complete GitHub Status Check
+        if: ${{ success() }}
+        uses: softprops/action-gh-release@v1
+        with:
+          context: "Check PR Checklist"
+          state: "success"
+          token: ${{ secrets.GITHUB_TOKEN }}
