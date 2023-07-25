@@ -7,7 +7,6 @@ on:
 jobs:
   check_merge:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -15,28 +14,18 @@ jobs:
       - name: Check PR Checklist
         id: checklist
         run: |
-          description=$(curl -s -H "Authorization: token ${{ secrets.TOKEN }}" \
+          # Fetch the pull request description using the GitHub API and jq to parse the JSON response
+          description=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3.raw" \
             ${{ github.api_url }}/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} | jq -r '.body')
 
-          # Check if the description contains unchecked checkboxes (`[ ]`)
-          if echo "$description" | grep -q -E '\[ \]'; then
-            echo "Please make sure all checkboxes are checked before merging."
-            exit 1
-          fi
+          # Extract all checkboxes ([ ]) from the description
+          checkboxes=($(echo "$description" | grep -oE '\[[ x]\]'))
 
-      - name: Create GitHub Status Check
-        if: ${{ failure() }}
-        uses: softprops/action-gh-release@v1
-        with:
-          context: "Check PR Checklist"
-          state: "failure"
-          token: ${{ secrets.TOKEN }}
-
-      - name: Complete GitHub Status Check
-        if: ${{ success() }}
-        uses: softprops/action-gh-release@v1
-        with:
-          context: "Check PR Checklist"
-          state: "success"
-          token: ${{ secrets.TOKEN }}
+          # Loop through each checkbox and check if it's unchecked ([ ])
+          for checkbox in "${checkboxes[@]}"; do
+            if [[ "$checkbox" == "[ ]" ]]; then
+              echo "Please make sure all checkboxes are checked before merging."
+              exit 1
+            fi
+          done
