@@ -34,9 +34,9 @@ jobs:
           if [ "$UNCHECKED_CHECKBOXES" -gt 0 ]; then
             COMMENT="Please make sure all checkboxes are checked before merging."
             echo "$COMMENT"
-            GITHUB_TOKEN=$(echo "${GITHUB_TOKEN}" | jq -r '@uri')
+            GITHUB_TOKEN=$(echo "${TOKEN}" | jq -r '@uri')
             ISSUE_NUMBER=$(jq -r '.pull_request.number' $GITHUB_EVENT_PATH)
             URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments"
-            curl -sSL -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" -d "{\"body\": \"${COMMENT}\"}" $URL
+            curl -sSL -X POST -H "Authorization: token ${TOKEN}" -H "Content-Type: application/json" -d "{\"body\": \"${COMMENT}\"}" $URL
             exit 1
           fi
