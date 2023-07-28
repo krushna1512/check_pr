@@ -13,22 +13,22 @@ jobs:
 
       - name: Check PR Checklist
         id: checklist
-        run: |
-          # Fetch the pull request details using the GitHub API and store the response in a file
-          curl -s -H "Authorization: Bearer ${{ secrets.TOKEN }}" \
-          "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}" \
-          | jq -r '.body' > pr_description.txt
+        uses: actions/github-script@v4
+        with:
+          script: |
+            # Import the core module to use the setFailed function
+            const core = require('@actions/core');
 
-          # Extract all checkboxes ([ ]) from the description using grep
-          unchecked_checkboxes=$(grep -o '\[[ x]\]' pr_description.txt | grep '\[ \]')
+            # Extract the description from the pull request payload
+            const description = context.payload.pull_request.body;
 
-          # If there are unchecked checkboxes, fail the workflow with an error message
-          if [ -n "$unchecked_checkboxes" ]; then
-            echo "Please make sure all checkboxes are checked before merging."
-            exit 1
-          fi
+            # Extract all checkboxes ([ ]) from the description using a regular expression
+            const checkboxes = description.match(/\[[ x]\]/g) || [];
 
-      - name: Cleanup
-        run: |
-          # Cleanup temporary files
-          rm pr_description.txt
+            # Filter unchecked checkboxes ([ ]) from the list
+            const uncheckedCheckboxes = checkboxes.filter(checkbox => checkbox === "[ ]");
+
+            # If there are unchecked checkboxes, fail the workflow with an error message
+            if (uncheckedCheckboxes.length > 0) {
+              core.setFailed("Please make sure all checkboxes are checked before merging.");
+            }
