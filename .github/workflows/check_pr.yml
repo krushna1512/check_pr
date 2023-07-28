@@ -11,18 +11,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '14' # You can change this to your preferred Node.js version
-
-      - name: Install dependencies
-        run: npm install jq
-
       - name: Check PR Checklist
         run: |
           # Extract the description from the pull request payload
-          DESCRIPTION=$(jq -r '.pull_request.body' $GITHUB_EVENT_PATH)
+          DESCRIPTION=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.body')
 
           # Extract all checkboxes ([ ]) from the description using a regular expression
           CHECKBOXES=$(echo "$DESCRIPTION" | grep -oE "\\[[ xX]\\]")
@@ -37,6 +29,6 @@ jobs:
             GITHUB_TOKEN=$(echo "${TOKEN}" | jq -r '@uri')
             ISSUE_NUMBER=$(jq -r '.pull_request.number' $GITHUB_EVENT_PATH)
             URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments"
-            curl -sSL -X POST -H "Authorization: token ${TOKEN}" -H "Content-Type: application/json" -d "{\"body\": \"${COMMENT}\"}" $URL
+            curl -sSL -X POST -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: application/json" -d "{\"body\": \"${COMMENT}\"}" $URL
             exit 1
           fi
