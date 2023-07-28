@@ -1,4 +1,4 @@
-name: Check PR Merge new
+name: Check PR Merge
 
 on:
   pull_request:
@@ -18,17 +18,36 @@ jobs:
           script: |
             # Import the core module to use the setFailed function
             const core = require('@actions/core');
+            const { context, getOctokit } = require('@actions/github');
 
-            # Extract the description from the pull request payload
-            const description = context.payload.pull_request.body;
+            try {
+              // Create an Octokit instance using the provided token
+              const octokit = getOctokit(process.env.TOKEN);
 
-            # Extract all checkboxes ([ ]) from the description using a regular expression
-            const checkboxes = description.match(/\[[ x]\]/g) || [];
+              // Extract the description from the pull request payload
+              const description = context.payload.pull_request.body;
 
-            # Filter unchecked checkboxes ([ ]) from the list
-            const uncheckedCheckboxes = checkboxes.filter(checkbox => checkbox === "[ ]");
+              // Extract all checkboxes ([ ]) from the description using a regular expression
+              const checkboxes = description.match(/\[[ x]\]/g) || [];
 
-            # If there are unchecked checkboxes, fail the workflow with an error message
-            if (uncheckedCheckboxes.length > 0) {
-              core.setFailed("Please make sure all checkboxes are checked before merging.");
+              // Filter unchecked checkboxes ([ ]) from the list
+              const uncheckedCheckboxes = checkboxes.filter(checkbox => checkbox === "[ ]");
+
+              // If there are unchecked checkboxes, post a comment and fail the workflow with an error message
+              if (uncheckedCheckboxes.length > 0) {
+                const comment = "Please make sure all checkboxes are checked before merging.";
+                const issue_number = context.payload.pull_request.number;
+
+                // Post a comment on the pull request
+                await octokit.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number,
+                  body: comment,
+                });
+
+                core.setFailed(comment);
+              }
+            } catch (error) {
+              core.setFailed(error.message);
             }
