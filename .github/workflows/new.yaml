@@ -1,4 +1,4 @@
-name: Check PR Merge
+name: Check PR Merge.
 
 on:
   pull_request:
