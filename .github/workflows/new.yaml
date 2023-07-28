@@ -12,30 +12,23 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Check PR Checklist
-        id: checklist
-        uses: actions/github-script@v4
-        with:
-          script: |
-            const { GitHub, context } = require('@actions/github');
+        run: |
+          # Extract the description from the pull request payload
+          DESCRIPTION=$(jq -r '.pull_request.body' $GITHUB_EVENT_PATH)
 
-            // Create a new GitHub instance
-            const octokit = new GitHub(process.env.TOKEN);
+          # Extract all checkboxes ([ ]) from the description using a regular expression
+          CHECKBOXES=$(echo "$DESCRIPTION" | grep -oE "\\[[ xX]\\]")
 
-            // Extract the description from the pull request payload
-            const description = context.payload.pull_request.body;
+          # Filter unchecked checkboxes ([ ]) from the list
+          UNCHECKED_CHECKBOXES=$(echo "$CHECKBOXES" | grep -c "\\[[ ]\\]")
 
-            // Extract all checkboxes ([ ]) from the description using a regular expression
-            const checkboxes = description.match(/\[[ x]\]/g) || [];
-
-            // Filter unchecked checkboxes ([ ]) from the list
-            const uncheckedCheckboxes = checkboxes.filter(checkbox => checkbox === "[ ]");
-
-            // If there are unchecked checkboxes, fail the workflow with an error message
-            if (uncheckedCheckboxes.length > 0) {
-              octokit.issues.createComment({
-                ...context.repo,
-                issue_number: context.payload.pull_request.number,
-                body: "Please make sure all checkboxes are checked before merging."
-              });
-              throw new Error("Checklist not complete.");
-            }
+          # If there are unchecked checkboxes, post a comment and fail the workflow with an error message
+          if [ "$UNCHECKED_CHECKBOXES" -gt 0 ]; then
+            COMMENT="Please make sure all checkboxes are checked before merging."
+            echo "$COMMENT"
+            GITHUB_TOKEN=$(echo "${GITHUB_TOKEN}" | jq -r '@uri')
+            ISSUE_NUMBER=$(jq -r '.pull_request.number' $GITHUB_EVENT_PATH)
+            URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments"
+            curl -sSL -X POST -H "Authorization: token ${TOKEN}" -H "Content-Type: application/json" -d "{\"body\": \"${COMMENT}\"}" $URL
+            exit 1
+          fi
