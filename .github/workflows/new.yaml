@@ -19,7 +19,7 @@ jobs:
             const { context, GitHub } = require('@actions/github');
 
             // Create a new GitHub instance
-            const octokit = new GitHub(process.env.GITHUB_TOKEN);
+            const octokit = new GitHub(process.env.TOKEN);
 
             // Extract the description from the pull request payload
             const description = context.payload.pull_request.body;
