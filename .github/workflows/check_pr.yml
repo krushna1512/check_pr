@@ -10,6 +10,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+        aaa
 
       - name: Check PR Checklist
         run: |
